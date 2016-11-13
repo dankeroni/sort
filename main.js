@@ -13,7 +13,7 @@
 
     function addRunListener() {
         canv.unbind('click');
-        canv.click(() => run(bubble));
+        canv.click(() => run(insertion));
     }
 
     function addPauseListener() {
@@ -37,7 +37,8 @@
     function run(algorithm) {
         readwrites = [];
         doneIndex = 0;
-        var array = Array.from({length: 50}, () => Math.floor(1 + Math.random() * 99999));
+        //Generate an array of random numbers, range 100-10000 inclusive
+        var array = Array.from({length: 50}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
         currentArray = (array.slice());
         max = Math.max(...array);
@@ -48,12 +49,12 @@
 
     function bubble(array) {
         var tempArrayLength = array.length;
-        var sorted = true;
-        while (sorted) {
-            sorted = false;
+        var swapped = true;
+        while (swapped) {
+            swapped = false;
             for (let i = 0; i < tempArrayLength-1; i++) {
                 if (compare(i, i+1, array) == 1) {
-                    sorted = true;
+                    swapped = true;
                     swap(i, i+1, array);
                 }
             }
@@ -74,6 +75,14 @@
             for (let i = 0; i < l - 1; i++) {
                 let i1 = Math.floor(Math.random() * l), i2 = Math.floor(Math.random() * l);
                 swap(i1, i2, array);
+            }
+        }
+    }
+
+    function insertion(array) {
+        for (let i = 1; i < array.length; i++) {
+            for (let tempI = i; tempI > 0 && compare(tempI-1, tempI, array) == 1; tempI--) {
+                swap(tempI-1, tempI, array);
             }
         }
     }
@@ -125,7 +134,7 @@
 
         context.fillStyle = "#fff";
         context.font = "30px Arial";
-        context.fillText("Click Anywhere - Bubblesort", 50, 50);
+        context.fillText("Click Anywhere - Insertion Sort", 50, 50);
     }
 
     function drawBar(index, value, barWidth, color, max) {
