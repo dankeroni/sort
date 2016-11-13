@@ -1,33 +1,44 @@
 /* jshint esversion: 6, loopfunc:true */
 (function() {
-    var canv, canvas, context, drawLoop, max, doneIndex, currentArray = [], readwrites = [];
+    var algorithmName, displayText, drawDelay, canv, canvas, context, drawLoop, max, doneIndex, currentArray = [], readwrites = [];
+    var algorithms = {
+        "Bogo": bogo,
+        "Bubble": bubble,
+        "Insertion": insertion,
+        "Selection": selection
+    };
 
     $(document).ready(function () {
-        canv = $('#mainCanvas');
+        var tempName = getParameterByName("algo");
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Insertion";
+        displayText = "Click Anywhere - " + algorithmName + " Sort";
+        var tempDelay = parseInt(getParameterByName("d"));
+        drawDelay =  tempDelay < 10 ? 10 : tempDelay;
+        canv = $("#mainCanvas");
         canvas = canv.get(0);
-        context = canvas.getContext('2d');
+        context = canvas.getContext("2d");
         addRunListener();
         resizeCanvas();
         $(window).resize(resizeCanvas);
     });
 
     function addRunListener() {
-        canv.unbind('click');
-        canv.click(() => run(selection));
+        canv.unbind("click");
+        canv.click(() => run(algorithms[algorithmName]));
     }
 
     function addPauseListener() {
-        canv.unbind('click');
+        canv.unbind("click");
         canv.click(() => {stopDrawLoop(); addResumeListener();});
     }
 
     function addResumeListener() {
-        canv.unbind('click');
+        canv.unbind("click");
         canv.click(() => {startDrawLoop(); addPauseListener();});
     }
 
     function startDrawLoop() {
-        drawLoop = setInterval(() => drawArray(false), 10);
+        drawLoop = setInterval(() => drawArray(false), drawDelay);
     }
 
     function stopDrawLoop() {
@@ -38,7 +49,7 @@
         readwrites = [];
         doneIndex = 0;
         //Generate an array of random numbers, range 100-10000 inclusive
-        var array = Array.from({length: 50}, () => Math.floor(100 + Math.random() * 9899));
+        var array = Array.from({length: parseInt(getParameterByName("n")) || 50}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
         currentArray = (array.slice());
         max = Math.max(...array);
@@ -114,7 +125,7 @@
 
     function drawArray(resize) {
         var barWidth = canvas.width / currentArray.length;
-        context.fillStyle = '#000';
+        context.fillStyle = "#000";
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         if (!resize) {
@@ -135,17 +146,17 @@
             }
         }
 
-        $.each(currentArray, (index, value) => drawBar(index, value, barWidth, index < doneIndex ? '#00ff00' : '#fff', max));
+        $.each(currentArray, (index, value) => drawBar(index, value, barWidth, index < doneIndex ? "#00ff00" : "#fff", max));
 
-        if (typeof this.readwrite != 'undefined' && this.readwrite !== null) {
-            let color = this.readwrite.type === 0 ? '#0000ff' : '#ff0000';
+        if (this.readwrite) {
+            let color = this.readwrite.type === 0 ? "#0000ff" : "#ff0000";
             drawBar(this.readwrite.index1, currentArray[this.readwrite.index1], barWidth, color, max);
             drawBar(this.readwrite.index2, currentArray[this.readwrite.index2], barWidth, color, max);
         }
 
         context.fillStyle = "#fff";
         context.font = "30px Arial";
-        context.fillText("Click Anywhere - Selection Sort", 50, 50);
+        context.fillText(displayText, 50, 50);
     }
 
     function drawBar(index, value, barWidth, color, max) {
@@ -158,5 +169,15 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         drawArray(true);
+    }
+
+    //https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+    function getParameterByName(name) {
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(window.location.href);
+        if (!results) return null;
+        if (!results[2]) return "";
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
 })();
