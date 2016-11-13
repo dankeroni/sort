@@ -13,7 +13,7 @@
 
     function addRunListener() {
         canv.unbind('click');
-        canv.click(() => run(insertion));
+        canv.click(() => run(selection));
     }
 
     function addPauseListener() {
@@ -87,6 +87,17 @@
         }
     }
 
+    function selection(array) {
+        var l = array.length;
+        for (let i1 = 0; i1 < l - 1; i1++) {
+            let minI = i1;
+            for (let i2 = i1 + 1; i2 < l; i2++) {
+                if (compare(minI, i2, array) == 1) minI = i2;
+            }
+            if (minI != i1) swap(i1, minI, array);
+        }
+    }
+
     //Returns: -1=array[i1]<array[i2], 0=array[i1]==array[i2], 1=array[i1]>array[i2]
     function compare(i1, i2, array) {
         readwrites.push({type: 0, index1: i1, index2: i2});
@@ -134,7 +145,7 @@
 
         context.fillStyle = "#fff";
         context.font = "30px Arial";
-        context.fillText("Click Anywhere - Insertion Sort", 50, 50);
+        context.fillText("Click Anywhere - Selection Sort", 50, 50);
     }
 
     function drawBar(index, value, barWidth, color, max) {
