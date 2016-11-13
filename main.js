@@ -1,6 +1,6 @@
 /* jshint esversion: 6, loopfunc:true */
 (function() {
-    var canv, canvas, context, drawLoop, max, readwrite, doneIndex, currentArray = [], readwrites = [];
+    var canv, canvas, context, drawLoop, max, doneIndex, currentArray = [], readwrites = [];
 
     $(document).ready(function () {
         canv = $('#mainCanvas');
@@ -51,7 +51,7 @@
         var sorted = true;
         while (sorted) {
             sorted = false;
-            for (var i = 0; i < tempArrayLength-1; i++) {
+            for (let i = 0; i < tempArrayLength-1; i++) {
                 if (compare(i, i+1, array) == 1) {
                     sorted = true;
                     swap(i, i+1, array);
@@ -64,15 +64,15 @@
     function bogo(array) {
         var l = array.length;
         function isSorted(array) {
-            for (var i = 0; i < l - 1; i++) {
+            for (let i = 0; i < l - 1; i++) {
                 if (compare(i, i+1, array) == 1) return false;
             }
             return true;
         }
 
         while (!isSorted(array)) {
-            for (var i = 0; i < l - 1; i++) {
-                var i1 = Math.floor(Math.random() * l), i2 = Math.floor(Math.random() * l);
+            for (let i = 0; i < l - 1; i++) {
+                let i1 = Math.floor(Math.random() * l), i2 = Math.floor(Math.random() * l);
                 swap(i1, i2, array);
             }
         }
@@ -99,15 +99,15 @@
 
         if (!resize) {
             if (readwrites.length > 0) {
-                readwrite = readwrites.shift();
+                this.readwrite = readwrites.shift();
                 //0: read, 1: write
-                if (readwrite.type == 1) {
-                    var temp = currentArray[readwrite.index1];
-                    currentArray[readwrite.index1] = currentArray[readwrite.index2];
-                    currentArray[readwrite.index2] = temp;
+                if (this.readwrite.type == 1) {
+                    let temp = currentArray[this.readwrite.index1];
+                    currentArray[this.readwrite.index1] = currentArray[this.readwrite.index2];
+                    currentArray[this.readwrite.index2] = temp;
                 }
             } else if (doneIndex < currentArray.length) {
-                readwrite = null;
+                this.readwrite = null;
                 doneIndex++;
             } else {
                 stopDrawLoop();
@@ -117,10 +117,10 @@
 
         $.each(currentArray, (index, value) => drawBar(index, value, barWidth, index < doneIndex ? '#00ff00' : '#fff', max));
 
-        if (typeof readwrite != 'undefined' && readwrite !== null) {
-            var color = readwrite.type === 0 ? '#0000ff' : '#ff0000';
-            drawBar(readwrite.index1, currentArray[readwrite.index1], barWidth, color, max);
-            drawBar(readwrite.index2, currentArray[readwrite.index2], barWidth, color, max);
+        if (typeof this.readwrite != 'undefined' && this.readwrite !== null) {
+            let color = this.readwrite.type === 0 ? '#0000ff' : '#ff0000';
+            drawBar(this.readwrite.index1, currentArray[this.readwrite.index1], barWidth, color, max);
+            drawBar(this.readwrite.index2, currentArray[this.readwrite.index2], barWidth, color, max);
         }
 
         context.fillStyle = "#fff";
