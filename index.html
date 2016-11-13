@@ -16,9 +16,189 @@ canvas { display:block; } /* To remove the scrollbars */
     </head>
     <body>
         <canvas id="mainCanvas"></canvas>
-        <script src="https://code.jquery.com/jquery-3.1.1.min.js"
-                integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-                crossorigin="anonymous"></script>
-        <script src="main.js"></script>
+        <script>
+(function() {
+    var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max, doneIndex, currentArray = [], readwrites = [];
+    var algorithms = {
+        "Bogo": bogo,
+        "Bubble": bubble,
+        "Gnome": gnome,
+        "Selection": selection,
+    };
+
+    init();
+
+    function init() {
+        var tempName = getParameterByName("algo");
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Gnome";
+        displayText = "Click Anywhere - " + algorithmName + " Sort";
+        var tempDelay = parseInt(getParameterByName("d"));
+        drawDelay =  tempDelay < 10 ? 10 : tempDelay;
+        canvas = document.getElementById("mainCanvas");
+        context = canvas.getContext("2d");
+        addRunListener();
+        resizeCanvas();
+        window.onresize = () => resizeCanvas();
+    }
+
+    function addRunListener() {
+        canvas.onclick = () => run(algorithms[algorithmName]);
+    }
+
+    function addPauseListener() {
+        canvas.onclick = () => {stopDrawLoop(); addResumeListener();};
+    }
+
+    function addResumeListener() {
+        canvas.onclick = () => {startDrawLoop(); addPauseListener();};
+    }
+
+    function startDrawLoop() {
+        drawLoop = setInterval(() => drawArray(false), drawDelay);
+    }
+
+    function stopDrawLoop() {
+        clearInterval(drawLoop);
+    }
+
+    function run(algorithm) {
+        readwrites = [];
+        doneIndex = 0;
+        //Generate an array of random numbers, range 100-10000 inclusive
+        var array = Array.from({length: parseInt(getParameterByName("n")) || 50}, () => Math.floor(100 + Math.random() * 9899));
+        //array.sort((a, b) => a - b);
+        currentArray = (array.slice());
+        max = Math.max(...array);
+        addPauseListener();
+        algorithm(array);
+        startDrawLoop();
+    }
+
+    function bubble(array) {
+        var tempArrayLength = array.length;
+        var swapped = true;
+        while (swapped) {
+            swapped = false;
+            for (let i = 0; i < tempArrayLength-1; i++) {
+                if (compare(i, i+1, array) == 1) {
+                    swapped = true;
+                    swap(i, i+1, array);
+                }
+            }
+            tempArrayLength--;
+        }
+    }
+
+    function bogo(array) {
+        var l = array.length;
+        function isSorted(array) {
+            for (let i = 0; i < l - 1; i++) {
+                if (compare(i, i+1, array) == 1) return false;
+            }
+            return true;
+        }
+
+        while (!isSorted(array)) {
+            for (let i = 0; i < l - 1; i++) {
+                let i1 = Math.floor(Math.random() * l), i2 = Math.floor(Math.random() * l);
+                swap(i1, i2, array);
+            }
+        }
+    }
+
+    function gnome(array) {
+        for (let i = 1; i < array.length; i++) {
+            for (let tempI = i; tempI > 0 && compare(tempI-1, tempI, array) == 1; tempI--) {
+                swap(tempI-1, tempI, array);
+            }
+        }
+    }
+
+    function selection(array) {
+        var l = array.length;
+        for (let i1 = 0; i1 < l - 1; i1++) {
+            let minI = i1;
+            for (let i2 = i1 + 1; i2 < l; i2++) {
+                if (compare(minI, i2, array) == 1) minI = i2;
+            }
+            if (minI != i1) swap(i1, minI, array);
+        }
+    }
+
+    //Returns: -1=array[i1]<array[i2], 0=array[i1]==array[i2], 1=array[i1]>array[i2]
+    function compare(i1, i2, array) {
+        readwrites.push({type: 0, index1: i1, index2: i2});
+        var v1 = array[i1], v2 = array[i2];
+        return v1 > v2 ? 1 : v1 == v2 ? 0 : -1;
+    }
+
+    function swap(i1, i2, array) {
+        readwrites.push({type: 1, index1: i1, index2: i2});
+        var temp = array[i1];
+        array[i1] = array[i2];
+        array[i2] = temp;
+    }
+
+    function drawArray(resize) {
+        var l = currentArray.length, barWidth = canvas.width / l;
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (!resize) {
+            if (readwrites.length > 0) {
+                this.readwrite = readwrites.shift();
+                //0: read, 1: write
+                if (this.readwrite.type == 1) {
+                    let temp = currentArray[this.readwrite.index1];
+                    currentArray[this.readwrite.index1] = currentArray[this.readwrite.index2];
+                    currentArray[this.readwrite.index2] = temp;
+                }
+            } else if (doneIndex < l) {
+                this.readwrite = null;
+                doneIndex++;
+            } else {
+                stopDrawLoop();
+                addRunListener();
+            }
+        }
+
+        for (let i = 0; i < l; i++) {
+            drawBar(i, currentArray[i], barWidth, i < doneIndex ? "#00ff00" : "#fff", max);
+        }
+
+        if (this.readwrite) {
+            let color = this.readwrite.type === 0 ? "#0000ff" : "#ff0000";
+            drawBar(this.readwrite.index1, currentArray[this.readwrite.index1], barWidth, color, max);
+            drawBar(this.readwrite.index2, currentArray[this.readwrite.index2], barWidth, color, max);
+        }
+
+        context.fillStyle = "#fff";
+        context.font = "30px Arial";
+        context.fillText(displayText, 50, 50);
+    }
+
+    function drawBar(index, value, barWidth, color, max) {
+        var scaledHeight = (value / max) * canvas.height;
+        context.fillStyle = color;
+        context.fillRect(index * barWidth, canvas.height - scaledHeight, barWidth, scaledHeight);
+    }
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawArray(true);
+    }
+
+    //https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+    function getParameterByName(name) {
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(window.location.href);
+        if (!results) return null;
+        if (!results[2]) return "";
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+})();
+        </script>
     </body>
 </html>
