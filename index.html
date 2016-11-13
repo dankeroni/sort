@@ -18,8 +18,8 @@ canvas { display:block; } /* To remove the scrollbars */
         <canvas id="mainCanvas"></canvas>
         <script>
 (function() {
-    var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max, doneIndex, currentArray = [], readwrites = [];
-    var algorithms = {
+    var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max,  doneIndex;
+    var comparisons = 0, swaps = 0, currentArray = [], readwrites = [], algorithms = {
         "Bogo": bogo,
         "Bubble": bubble,
         "Gnome": gnome,
@@ -64,6 +64,8 @@ canvas { display:block; } /* To remove the scrollbars */
     function run(algorithm) {
         readwrites = [];
         doneIndex = 0;
+        comparisons = 0;
+        swaps = 0;
         //Generate an array of random numbers, range 100-10000 inclusive
         var array = Array.from({length: parseInt(getParameterByName("n")) || 50}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
@@ -149,10 +151,11 @@ canvas { display:block; } /* To remove the scrollbars */
                 this.readwrite = readwrites.shift();
                 //0: read, 1: write
                 if (this.readwrite.type == 1) {
+                    swaps++;
                     let temp = currentArray[this.readwrite.index1];
                     currentArray[this.readwrite.index1] = currentArray[this.readwrite.index2];
                     currentArray[this.readwrite.index2] = temp;
-                }
+                } else comparisons++;
             } else if (doneIndex < l) {
                 this.readwrite = null;
                 doneIndex++;
@@ -175,6 +178,8 @@ canvas { display:block; } /* To remove the scrollbars */
         context.fillStyle = "#fff";
         context.font = "30px Arial";
         context.fillText(displayText, 50, 50);
+        context.fillText(comparisons + " Comparisons", 50, 110);
+        context.fillText(swaps + " Swaps", 50, 170);
     }
 
     function drawBar(index, value, barWidth, color, max) {
