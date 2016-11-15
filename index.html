@@ -19,7 +19,7 @@ canvas { display:block; } /* To remove the scrollbars */
         <script>
 (function() {
     var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max,  doneIndex;
-    var comparisons = 0, swaps = 0, currentArray = [], readwrites = [], algorithms = {
+    var reads = 0, writes = 0, currentArray = [], readwritesHistory = [], algorithms = {
         "Bogo": bogo,
         "Bubble": bubble,
         "Gnome": gnome,
@@ -62,10 +62,8 @@ canvas { display:block; } /* To remove the scrollbars */
     }
 
     function run(algorithm) {
-        readwrites = [];
-        doneIndex = 0;
-        comparisons = 0;
-        swaps = 0;
+        readwritesHistory = [];
+        doneIndex = reads = writes = 0;
         //Generate an array of random numbers, range 100-10000 inclusive
         var array = Array.from({length: parseInt(getParameterByName("n")) || 50}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
@@ -127,18 +125,28 @@ canvas { display:block; } /* To remove the scrollbars */
         }
     }
 
+    function read(i, array) {
+        readwritesHistory.push([{type: 0, index: i}]);
+        return array[i];
+    }
+
+    function write(i, v, array) {
+        readwritesHistory.push([{type: 1, index: i, value: v}]);
+        array[i] = v;
+    }
+
     //Returns: -1=array[i1]<array[i2], 0=array[i1]==array[i2], 1=array[i1]>array[i2]
     function compare(i1, i2, array) {
-        readwrites.push({type: 0, index1: i1, index2: i2});
+        readwritesHistory.push([{type: 0, index: i1}, {type: 0, index: i2}]);
         var v1 = array[i1], v2 = array[i2];
         return v1 > v2 ? 1 : v1 == v2 ? 0 : -1;
     }
 
     function swap(i1, i2, array) {
-        readwrites.push({type: 1, index1: i1, index2: i2});
         var temp = array[i1];
         array[i1] = array[i2];
         array[i2] = temp;
+        readwritesHistory.push([{type: 1, index: i1, value: array[i1]}, {type:1, index: i2, value: array[i2]}]);
     }
 
     function drawArray(resize) {
@@ -147,17 +155,18 @@ canvas { display:block; } /* To remove the scrollbars */
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         if (!resize) {
-            if (readwrites.length > 0) {
-                this.readwrite = readwrites.shift();
+            if (readwritesHistory.length > 0) {
+                this.readwrites = readwritesHistory.shift();
                 //0: read, 1: write
-                if (this.readwrite.type == 1) {
-                    swaps++;
-                    let temp = currentArray[this.readwrite.index1];
-                    currentArray[this.readwrite.index1] = currentArray[this.readwrite.index2];
-                    currentArray[this.readwrite.index2] = temp;
-                } else comparisons++;
+                for (let i = 0; i < readwrites.length; i++) {
+                    let readwrite = readwrites[i];
+                    if (readwrite.type == 1) {
+                        writes++;
+                        currentArray[readwrite.index] = readwrite.value;
+                    } else reads++;
+                }
             } else if (doneIndex < l) {
-                this.readwrite = null;
+                this.readwrites = null;
                 doneIndex++;
             } else {
                 stopDrawLoop();
@@ -169,17 +178,21 @@ canvas { display:block; } /* To remove the scrollbars */
             drawBar(i, currentArray[i], barWidth, i < doneIndex ? "#00ff00" : "#fff", max);
         }
 
-        if (this.readwrite) {
-            let color = this.readwrite.type === 0 ? "#0000ff" : "#ff0000";
-            drawBar(this.readwrite.index1, currentArray[this.readwrite.index1], barWidth, color, max);
-            drawBar(this.readwrite.index2, currentArray[this.readwrite.index2], barWidth, color, max);
+        if (this.readwrites) {
+            for (let i = 0; i < readwrites.length; i++) {
+                let readwrite = readwrites[i],
+                    color = readwrite.type === 0 ? "#0000ff" : "#ff0000";
+                drawBar(readwrite.index, currentArray[readwrite.index], barWidth, color, max);
+            }
         }
 
-        context.fillStyle = "#fff";
         context.font = "30px Arial";
+        context.fillStyle = "#fff";
         context.fillText(displayText, 50, 50);
-        context.fillText(comparisons + " Comparisons", 50, 110);
-        context.fillText(swaps + " Swaps", 50, 170);
+        context.fillStyle = "#0000ff";
+        context.fillText(reads + " Reads", 50, 110);
+        context.fillStyle = "#ff0000";
+        context.fillText(writes + " Writes", 50, 170);
     }
 
     function drawBar(index, value, barWidth, color, max) {
