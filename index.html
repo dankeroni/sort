@@ -108,7 +108,7 @@ canvas { display:block; } /* To remove the scrollbars */
     }
 
     function gnome(array) {
-        for (let i = 1; i < array.length; i++) {
+        for (let l = array.length, i = 1; i < l; i++) {
             for (let tempI = i; tempI > 0 && compare(tempI-1, tempI, array) == 1; tempI--) {
                 swap(tempI-1, tempI, array);
             }
@@ -128,7 +128,7 @@ canvas { display:block; } /* To remove the scrollbars */
 
     function counting(array) {
         var countArray = new Array(10000).fill(0), currentIndex = 0;
-        for (let i = 0; i < array.length; i++) {
+        for (let l = array.length, i = 0; i < l; i++) {
             countArray[read(i, array)]++;
         }
 
@@ -173,7 +173,7 @@ canvas { display:block; } /* To remove the scrollbars */
             if (readwritesHistory.length > 0) {
                 this.readwrites = readwritesHistory.shift();
                 //0: read, 1: write
-                for (let i = 0; i < readwrites.length; i++) {
+                for (let l = readwrites.length, i = 0; i < l; i++) {
                     let readwrite = readwrites[i];
                     if (readwrite.type == 1) {
                         writes++;
@@ -194,7 +194,7 @@ canvas { display:block; } /* To remove the scrollbars */
         }
 
         if (this.readwrites) {
-            for (let i = 0; i < readwrites.length; i++) {
+            for (let l = readwrites.length, i = 0; i < l; i++) {
                 let readwrite = readwrites[i],
                     color = readwrite.type === 0 ? "#0000ff" : "#ff0000";
                 drawBar(readwrite.index, currentArray[readwrite.index], barWidth, color, max);
