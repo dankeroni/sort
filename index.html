@@ -24,13 +24,14 @@ canvas { display:block; } /* To remove the scrollbars */
         "Bubble": bubble,
         "Gnome": gnome,
         "Selection": selection,
+        "Counting": counting
     };
 
     init();
 
     function init() {
         var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Gnome";
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Counting";
         displayText = "Click Anywhere - " + algorithmName + " Sort";
         var tempDelay = parseInt(getParameterByName("d"));
         drawDelay =  tempDelay < 10 ? 10 : tempDelay;
@@ -65,7 +66,7 @@ canvas { display:block; } /* To remove the scrollbars */
         readwritesHistory = [];
         doneIndex = reads = writes = 0;
         //Generate an array of random numbers, range 100-10000 inclusive
-        var array = Array.from({length: parseInt(getParameterByName("n")) || 50}, () => Math.floor(100 + Math.random() * 9899));
+        var array = Array.from({length: parseInt(getParameterByName("n")) || 1500}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
         currentArray = (array.slice());
         max = Math.max(...array);
@@ -122,6 +123,20 @@ canvas { display:block; } /* To remove the scrollbars */
                 if (compare(minI, i2, array) == 1) minI = i2;
             }
             if (minI != i1) swap(i1, minI, array);
+        }
+    }
+
+    function counting(array) {
+        var countArray = new Array(10000).fill(0), currentIndex = 0;
+        for (let i = 0; i < array.length; i++) {
+            countArray[read(i, array)]++;
+        }
+
+        for (let i = 100; i < 10001; i++) {
+            while (countArray[i] > 0) {
+                write(currentIndex++, i, array);
+                countArray[i]--;
+            }
         }
     }
 
