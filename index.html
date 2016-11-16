@@ -24,14 +24,15 @@ canvas { display:block; } /* To remove the scrollbars */
         "Bubble": bubble,
         "Gnome": gnome,
         "Selection": selection,
-        "Counting": counting
+        "Counting": counting,
+        "Radix": radix
     };
 
     init();
 
     function init() {
         var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Counting";
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Radix";
         displayText = "Click Anywhere - " + algorithmName + " Sort";
         var tempDelay = parseInt(getParameterByName("d"));
         drawDelay =  tempDelay < 10 ? 10 : tempDelay;
@@ -66,7 +67,7 @@ canvas { display:block; } /* To remove the scrollbars */
         readwritesHistory = [];
         doneIndex = reads = writes = 0;
         //Generate an array of random numbers, range 100-10000 inclusive
-        var array = Array.from({length: parseInt(getParameterByName("n")) || 1500}, () => Math.floor(100 + Math.random() * 9899));
+        var array = Array.from({length: parseInt(getParameterByName("n")) || 300}, () => Math.floor(100 + Math.random() * 9899));
         //array.sort((a, b) => a - b);
         currentArray = (array.slice());
         max = Math.max(...array);
@@ -136,6 +137,28 @@ canvas { display:block; } /* To remove the scrollbars */
             while (countArray[i] > 0) {
                 write(currentIndex++, i, array);
                 countArray[i]--;
+            }
+        }
+    }
+
+    function radix(array) {
+        var l = array.length;
+        for(let maxDigits = max.toString().length, i = 1; i <= maxDigits; i++) {
+            let currentIndex = 0; mod = Math.pow(10, i), div = Math.pow(10, i-1), modArrays = new Array(10);
+            for(let o = 0; o < 10; o++) {
+                modArrays[o] = [];
+            }
+
+            for(let j = 0; j < l; j++) {
+                let v = read(j, array);
+                modArrays[Math.floor((v % mod) / div)].push(v);
+            }
+
+            for(let k = 0; k < 10; k++) {
+                let modArray = modArrays[k];
+                for(let lMod = modArray.length, m = 0; m < lMod; m++) {
+                    write(currentIndex++, modArray[m], array);
+                }
             }
         }
     }
