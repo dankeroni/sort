@@ -25,14 +25,15 @@ canvas { display:block; } /* To remove the scrollbars */
         "Insertion": insertion,
         "Selection": selection,
         "Counting": counting,
-        "Radix": radix
+        "Radix": radix,
+        "Merge": merge
     };
 
     init();
 
     function init() {
         var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Radix";
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Merge";
         displayText = algorithmName + " Sort - Click Anywhere";
         var tempDelay = parseInt(getParameterByName("d"));
         drawDelay =  tempDelay < 10 ? 10 : tempDelay;
@@ -56,6 +57,7 @@ canvas { display:block; } /* To remove the scrollbars */
     }
 
     function startDrawLoop() {
+        drawArray(false);
         drawLoop = setInterval(() => drawArray(false), drawDelay);
     }
 
@@ -67,99 +69,120 @@ canvas { display:block; } /* To remove the scrollbars */
         readwritesHistory = [];
         doneIndex = reads = writes = 0;
         //Generate an array of random numbers, range 100-9999 inclusive
-        var array = Array.from({length: parseInt(getParameterByName("n")) || 300}, () => Math.floor(100 + Math.random() * 9900));
+        var l = parseInt(getParameterByName("n")) || 150, array = Array.from({length: l}, () => Math.floor(100 + Math.random() * 9900));
         //array.sort((a, b) => a - b);
         currentArray = (array.slice());
         max = Math.max(...array);
         addPauseListener();
-        algorithm(array);
+        algorithm(array, 0, l);
         startDrawLoop();
     }
 
-    function bubble(array) {
-        var tempArrayLength = array.length;
+    function bubble(array, start, end) {
         var swapped = true;
         while (swapped) {
             swapped = false;
-            for (let i = 0; i < tempArrayLength-1; i++) {
+            for (let i = start; i < end-1; i++) {
                 if (compare(i, i+1, array) == 1) {
                     swapped = true;
                     swap(i, i+1, array);
                 }
             }
-            tempArrayLength--;
+            end--;
         }
     }
 
-    function bogo(array) {
-        var l = array.length;
-        function isSorted(array) {
-            for (let i = 0; i < l - 1; i++) {
-                if (compare(i, i+1, array) == 1) return false;
-            }
-            return true;
-        }
-
-        while (!isSorted(array)) {
-            for (let i = 0; i < l - 1; i++) {
-                let i1 = Math.floor(Math.random() * l), i2 = Math.floor(Math.random() * l);
+    function bogo(array, start, end) {
+        while (!isSorted(array, start, end)) {
+            for (let i = start; i < end - 1; i++) {
+                let i1 = Math.floor(Math.random() * end), i2 = Math.floor(Math.random() * end);
                 swap(i1, i2, array);
             }
         }
     }
 
-    function insertion(array) {
-        for (let l = array.length, i = 1; i < l; i++) {
-            for (let tempI = i; tempI > 0 && compare(tempI-1, tempI, array) == 1; tempI--) {
+    function insertion(array, start, end) {
+        for (let i = start; i < end; i++) {
+            for (let tempI = i; tempI > start && compare(tempI-1, tempI, array) == 1; tempI--) {
                 swap(tempI-1, tempI, array);
             }
         }
     }
 
-    function selection(array) {
-        var l = array.length;
-        for (let i1 = 0; i1 < l - 1; i1++) {
+    function selection(array, start, end) {
+        for (let i1 = start; i1 < end - 1; i1++) {
             let minI = i1;
-            for (let i2 = i1 + 1; i2 < l; i2++) {
+            for (let i2 = i1 + 1; i2 < end; i2++) {
                 if (compare(minI, i2, array) == 1) minI = i2;
             }
             if (minI != i1) swap(i1, minI, array);
         }
     }
 
-    function counting(array) {
-        var countArray = new Array(10000).fill(0), currentIndex = 0;
-        for (let l = array.length, i = 0; i < l; i++) {
+    function counting(array, start, end) {
+        var countArray = new Array(10000).fill(0);
+        for (let i = start; i < end; i++) {
             countArray[read(i, array)]++;
         }
 
         for (let i = 100; i < 10001; i++) {
             while (countArray[i] > 0) {
-                write(currentIndex++, i, array);
+                write(start++, i, array);
                 countArray[i]--;
             }
         }
     }
 
-    function radix(array) {
-        var l = array.length;
+    function radix(array, start, end) {
+        let modArrays = new Array(10);
         for(let maxDigits = max.toString().length, i = 1; i <= maxDigits; i++) {
-            let currentIndex = 0; mod = Math.pow(10, i), div = Math.pow(10, i-1), modArrays = new Array(10);
+            let mod = Math.pow(10, i), div = Math.pow(10, i-1);
             for(let o = 0; o < 10; o++) {
                 modArrays[o] = [];
             }
 
-            for(let j = 0; j < l; j++) {
+            for(let j = start; j < end; j++) {
                 let v = read(j, array);
                 modArrays[Math.floor((v % mod) / div)].push(v);
             }
 
-            for(let k = 0; k < 10; k++) {
+            for(let j = start, k = 0; k < 10; k++) {
                 let modArray = modArrays[k];
                 for(let lMod = modArray.length, m = 0; m < lMod; m++) {
-                    write(currentIndex++, modArray[m], array);
+                    write(j++, modArray[m], array);
                 }
             }
+        }
+    }
+
+    function merge(array, start, end) {
+        if (end - start < 2) return;
+
+        var middle = Math.floor((start+end) / 2), tempArray = [];
+        merge(array, start, middle);
+        merge(array, middle, end);
+
+        for(let i = leftI = start, rightI = middle ; i < end; i++) {
+            let l = leftI < middle, r = rightI < end;
+            if (l && r) {
+                if (compare(leftI, rightI, array) == -1) {
+                    tempArray[i] = array[leftI];
+                    leftI++;
+                } else {
+                    tempArray[i] = array[rightI];
+                    rightI++;
+                }
+            } else if (l) {
+                tempArray[i] = array[leftI];
+                leftI++;
+            } else if (r) {
+                tempArray[i] = array[rightI];
+                rightI++;
+            }
+        }
+
+        while(start < end) {
+            write(start, tempArray[start++], array);
         }
     }
 
@@ -185,6 +208,13 @@ canvas { display:block; } /* To remove the scrollbars */
         array[i1] = array[i2];
         array[i2] = temp;
         readwritesHistory.push([{type: 1, index: i1, value: array[i1]}, {type:1, index: i2, value: array[i2]}]);
+    }
+
+    function isSorted(array, start, end) {
+        for (let i = start; i < end - 1; i++) {
+            if (compare(i, i+1, array) == 1) return false;
+        }
+        return true;
     }
 
     function drawArray(resize) {
