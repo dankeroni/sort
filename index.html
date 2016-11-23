@@ -1,17 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <title>Sorting Algorithm Visualisation</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <meta charset="utf-8">
         <style>
 body {
     overflow: hidden;
 }
-* { margin:0; padding:0; } /* to remove the top and left whitespace */
 
-html, body { width:100%; height:100%; } /* just to be sure these are full screen*/
+* {
+    margin:0; padding:0;
+}
 
-canvas { display:block; } /* To remove the scrollbars */
-
+canvas {
+    display:block;
+}
         </style>
     </head>
     <body>
@@ -26,14 +30,15 @@ canvas { display:block; } /* To remove the scrollbars */
         "Selection": selection,
         "Counting": counting,
         "Radix": radix,
-        "Merge": merge
+        "Merge": merge,
+        "Quick": quick
     };
 
     init();
 
     function init() {
         var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Merge";
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Quick";
         displayText = algorithmName + " Sort - Click Anywhere";
         var tempDelay = parseInt(getParameterByName("d"));
         drawDelay =  tempDelay < 10 ? 10 : tempDelay;
@@ -74,7 +79,7 @@ canvas { display:block; } /* To remove the scrollbars */
         currentArray = (array.slice());
         max = Math.max(...array);
         addPauseListener();
-        algorithm(array, 0, l);
+        algorithm(array, 0, l-1);
         startDrawLoop();
     }
 
@@ -82,10 +87,10 @@ canvas { display:block; } /* To remove the scrollbars */
         var swapped = true;
         while (swapped) {
             swapped = false;
-            for (let i = start; i < end-1; i++) {
-                if (compare(i, i+1, array) == 1) {
+            for (let i = start; i < end; i++) {
+                if (compare(array, i, i+1) == 1) {
                     swapped = true;
-                    swap(i, i+1, array);
+                    swap(array, i, i+1);
                 }
             }
             end--;
@@ -94,40 +99,40 @@ canvas { display:block; } /* To remove the scrollbars */
 
     function bogo(array, start, end) {
         while (!isSorted(array, start, end)) {
-            for (let i = start; i < end - 1; i++) {
-                let i1 = Math.floor(Math.random() * end), i2 = Math.floor(Math.random() * end);
-                swap(i1, i2, array);
+            for (let i = start; i <= end; i++) {
+                let i1 = Math.floor(Math.random() * (end+1)), i2 = Math.floor(Math.random() * (end+1));
+                swap(array, i1, i2);
             }
         }
     }
 
     function insertion(array, start, end) {
-        for (let i = start; i < end; i++) {
-            for (let tempI = i; tempI > start && compare(tempI-1, tempI, array) == 1; tempI--) {
-                swap(tempI-1, tempI, array);
+        for (let i = start; i <= end; i++) {
+            for (let tempI = i; tempI > start && compare(array, tempI-1, tempI) == 1; tempI--) {
+                swap(array, tempI-1, tempI);
             }
         }
     }
 
     function selection(array, start, end) {
-        for (let i1 = start; i1 < end - 1; i1++) {
+        for (let i1 = start; i1 < end; i1++) {
             let minI = i1;
-            for (let i2 = i1 + 1; i2 < end; i2++) {
-                if (compare(minI, i2, array) == 1) minI = i2;
+            for (let i2 = i1 + 1; i2 <= end; i2++) {
+                if (compare(array, minI, i2) == 1) minI = i2;
             }
-            if (minI != i1) swap(i1, minI, array);
+            if (minI != i1) swap(array, i1, minI);
         }
     }
 
     function counting(array, start, end) {
         var countArray = new Array(10000).fill(0);
-        for (let i = start; i < end; i++) {
-            countArray[read(i, array)]++;
+        for (let i = start; i <= end; i++) {
+            countArray[read(array, i)]++;
         }
 
         for (let i = 100; i < 10001; i++) {
             while (countArray[i] > 0) {
-                write(start++, i, array);
+                write(array, start++, i);
                 countArray[i]--;
             }
         }
@@ -141,36 +146,36 @@ canvas { display:block; } /* To remove the scrollbars */
                 modArrays[o] = [];
             }
 
-            for(let j = start; j < end; j++) {
-                let v = read(j, array);
+            for(let j = start; j <= end; j++) {
+                let v = read(array, j);
                 modArrays[Math.floor((v % mod) / div)].push(v);
             }
 
             for(let j = start, k = 0; k < 10; k++) {
                 let modArray = modArrays[k];
                 for(let lMod = modArray.length, m = 0; m < lMod; m++) {
-                    write(j++, modArray[m], array);
+                    write(array, j++, modArray[m]);
                 }
             }
         }
     }
 
     function merge(array, start, end) {
-        if (end - start < 2) return;
+        if (start >= end) return;
 
         var middle = Math.floor((start+end) / 2), tempArray = [];
         merge(array, start, middle);
-        merge(array, middle, end);
+        merge(array, middle+1, end);
 
-        for(let i = leftI = start, rightI = middle ; i < end; i++) {
-            let l = leftI < middle, r = rightI < end;
+        for(let i = leftI = start, rightI = middle+1 ; i <= end; i++) {
+            let l = leftI <= middle, r = rightI <= end;
             if (l && r) {
-                if (compare(leftI, rightI, array) == -1) {
-                    tempArray[i] = array[leftI];
-                    leftI++;
-                } else {
+                if (compare(array, leftI, rightI) == 1) {
                     tempArray[i] = array[rightI];
                     rightI++;
+                } else {
+                    tempArray[i] = array[leftI];
+                    leftI++;
                 }
             } else if (l) {
                 tempArray[i] = array[leftI];
@@ -181,29 +186,49 @@ canvas { display:block; } /* To remove the scrollbars */
             }
         }
 
-        while(start < end) {
-            write(start, tempArray[start++], array);
+        while(start <= end) {
+            write(array, start, tempArray[start++]);
         }
     }
 
-    function read(i, array) {
+    function quick(array, start, end, pivotType) {
+        if (start >= end) return;
+
+        // 0=random, 1=left, 2=right, 3=middle
+        pivotType = !pivotType || pivotType < 1 || pivotType > 3 ? Math.floor((Math.random() * 3) + 1) : pivotType;
+        let pivotIndex = pivotType == 1 ? start : pivotType == 2 ? end : Math.floor((start+end) / 2);
+
+        if (pivotType != 2) swap(array, pivotIndex, end);
+        var partIndex = start;
+        for(let i = start; i < end; i++) {
+            if (compare(array, i, end) != 1) {
+                swap(array, i, partIndex++);
+            }
+        }
+        if (partIndex != end) swap(array, end, partIndex);
+
+        quick(array, start, partIndex-1, pivotType);
+        quick(array, partIndex+1, end, pivotType);
+    }
+
+    function read(array, i) {
         readwritesHistory.push([{type: 0, index: i}]);
         return array[i];
     }
 
-    function write(i, v, array) {
+    function write(array, i, v) {
         readwritesHistory.push([{type: 1, index: i, value: v}]);
         array[i] = v;
     }
 
     //Returns: -1=array[i1]<array[i2], 0=array[i1]==array[i2], 1=array[i1]>array[i2]
-    function compare(i1, i2, array) {
+    function compare(array, i1, i2) {
         readwritesHistory.push([{type: 0, index: i1}, {type: 0, index: i2}]);
         var v1 = array[i1], v2 = array[i2];
         return v1 > v2 ? 1 : v1 == v2 ? 0 : -1;
     }
 
-    function swap(i1, i2, array) {
+    function swap(array, i1, i2) {
         var temp = array[i1];
         array[i1] = array[i2];
         array[i2] = temp;
@@ -211,8 +236,8 @@ canvas { display:block; } /* To remove the scrollbars */
     }
 
     function isSorted(array, start, end) {
-        for (let i = start; i < end - 1; i++) {
-            if (compare(i, i+1, array) == 1) return false;
+        for (let i = start; i < end; i++) {
+            if (compare(array, i, i+1) == 1) return false;
         }
         return true;
     }
