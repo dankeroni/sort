@@ -22,8 +22,10 @@ canvas {
         <canvas id="mainCanvas"></canvas>
         <script>
 (function() {
+    "use strict";
+
     var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max,  doneIndex;
-    var reads = 0, writes = 0, currentArray = [], readwritesHistory = [], algorithms = {
+    var reads = 0, writes = 0, currentArray = [], readwritesHistory = [], readwrites, algorithms = {
         "Bogo": bogo,
         "Bubble": bubble,
         "Insertion": insertion,
@@ -31,14 +33,15 @@ canvas {
         "Counting": counting,
         "Radix": radix,
         "Merge": merge,
-        "Quick": quick
+        "Quick": quick,
+        "Heap": heap
     };
 
     init();
 
     function init() {
         var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Quick";
+        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Heap";
         displayText = algorithmName + " Sort - Click Anywhere";
         var tempDelay = parseInt(getParameterByName("d"));
         drawDelay =  tempDelay < 10 ? 10 : tempDelay;
@@ -167,7 +170,7 @@ canvas {
         merge(array, start, middle);
         merge(array, middle+1, end);
 
-        for(let i = leftI = start, rightI = middle+1 ; i <= end; i++) {
+        for(let i = start, leftI = start, rightI = middle+1 ; i <= end; i++) {
             let l = leftI <= middle, r = rightI <= end;
             if (l && r) {
                 if (compare(array, leftI, rightI) == 1) {
@@ -211,6 +214,29 @@ canvas {
         quick(array, partIndex+1, end, pivotType);
     }
 
+    function heap(array, start, end) {
+        function siftDown(i) {
+            var l = (2 * i) + 1 - start, r = (2 * i) + 2 - start, max = i;
+
+            if (l <= end && compare(array, max, l) == -1) max = l;
+            if (r <= end && compare(array, max, r) == -1) max = r;
+            if (max != i) {
+                swap(array, i, max);
+                siftDown(max);
+            }
+        }
+
+        // Build max heap
+        for (let i = Math.floor((end-1+start) / 2); i >= start; i--) {
+            siftDown(i);
+        }
+
+        while (end >= start) {
+            swap(array, start, end--);
+            siftDown(start);
+        }
+    }
+
     function read(array, i) {
         readwritesHistory.push([{type: 0, index: i}]);
         return array[i];
@@ -249,7 +275,7 @@ canvas {
 
         if (!resize) {
             if (readwritesHistory.length > 0) {
-                this.readwrites = readwritesHistory.shift();
+                readwrites = readwritesHistory.shift();
                 //0: read, 1: write
                 for (let l = readwrites.length, i = 0; i < l; i++) {
                     let readwrite = readwrites[i];
@@ -259,7 +285,7 @@ canvas {
                     } else reads++;
                 }
             } else if (doneIndex < l) {
-                this.readwrites = null;
+                readwrites = null;
                 doneIndex++;
             } else {
                 stopDrawLoop();
@@ -271,7 +297,7 @@ canvas {
             drawBar(i, currentArray[i], barWidth, i < doneIndex ? "#00ff00" : "#fff", max);
         }
 
-        if (this.readwrites) {
+        if (readwrites) {
             for (let l = readwrites.length, i = 0; i < l; i++) {
                 let readwrite = readwrites[i],
                     color = readwrite.type === 0 ? "#0000ff" : "#ff0000";
@@ -283,9 +309,9 @@ canvas {
         context.fillStyle = "#fff";
         context.fillText(displayText, 50, 50);
         context.fillStyle = "#0000ff";
-        context.fillText(reads + " Reads", 50, 110);
+        context.fillText(reads + " Reads", 50, 100);
         context.fillStyle = "#ff0000";
-        context.fillText(writes + " Writes", 50, 170);
+        context.fillText(writes + " Writes", 50, 140);
     }
 
     function drawBar(index, value, barWidth, color, max) {
