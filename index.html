@@ -27,7 +27,7 @@ body {
     margin-right: 10px;
 }
 
-.ib {
+.ib, #settings span {
     display: inline-block;
 }
 
@@ -64,20 +64,22 @@ button {
     <body>
         <div id="container">
             <div id="settings">
-                <span class="ib">
+                <span>
                     <label for="#algorithm">Algorithm</label>
                     <select id="algorithm"></select>
                 </span>
-                <span class="ib">
+                <span>
                     <label for="#order">Array Order</label>
                     <select id="order"></select>
                 </span>
-                <span class="ib">
+                <span>
                     <label for="#size">Array Size</label>
                     <input id="size" type="number" value="150" min="1" max="10000">
                 </span>
-                <button id="run">Run</button>
-                <button id="pause">Pause</button>
+                <span>
+                    <button id="run">Run</button>
+                    <button id="pause">Pause</button>
+                </span>
             </div>
             <div id="stats">
                 <span class="ib"><span id="reads"><span id="readsCount">0</span> Reads</span> |</span>
@@ -107,7 +109,6 @@ button {
     orderDropdown = document.getElementById("order"),
     sizeInput = document.getElementById("size"),
     drawDelay = parseInt(getParameterByName("d")),
-    drawDelay =  drawDelay < 10 ? 10 : drawDelay,
     canvas = document.getElementById("canvas"),
     context = canvas.getContext("2d"),
     containerDiv = document.getElementById("container"),
@@ -121,6 +122,7 @@ button {
     defaultOrder = getParameterByName("o"),
     orders = ["Random", "Sorted", "Reversed"];
 
+    drawDelay =  drawDelay < 10 ? 10 : drawDelay;
     if (defaultOrder) defaultOrder = defaultOrder.charAt(0).toUpperCase() + defaultOrder.slice(1).toLowerCase();
     for (let i = 0; i < 3; i++) {
         let option = document.createElement("option"), order = orders[i];
@@ -178,7 +180,7 @@ button {
     function run(algorithm) {
         runButton.onclick = () => runSetup();
         readwritesHistory = [];
-        doneIndex = reads = writes = writesCount.innerHTML = readsCount.innerHTML = 0;
+        doneIndex = reads = writes = writesSpan.innerHTML = readsSpan.innerHTML = 0;
         var l = parseInt(sizeInput.value) || 150, order = orderDropdown.value,
         //Generate an array of random numbers, range 100-9999 inclusive
         array = Array.from({length: l}, () => Math.floor(100 + Math.random() * 9900));
@@ -187,7 +189,7 @@ button {
         max = Math.max(...array);
         var startTime = performance.now();
         algorithm(array, 0, l-1);
-        runtime.innerHTML = (performance.now() - startTime).toFixed(4);
+        runtimeSpan.innerHTML = (performance.now() - startTime).toFixed(4);
         runButton.innerHTML = "Stop";
         resume();
     }
@@ -388,7 +390,7 @@ button {
                     let readwrite = readwrites[i];
                     //0: read, 1: write
                     if (readwrite.type == 1) {
-                        writesCount.innerHTML = ++writes;
+                        writesSpan.innerHTML = ++writes;
                         currentArray[readwrite.index] = readwrite.value;
                     } else readsSpan.innerHTML = ++reads;
                 }
