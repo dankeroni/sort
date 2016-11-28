@@ -7,61 +7,163 @@
         <style>
 body {
     overflow: hidden;
+    margin: 0;
+    background-color: #0e0e0e;
 }
 
-* {
-    margin:0; padding:0;
+#container {
+    padding: 12px 20px;
+    color: white;
+    font-family: "Open Sans", Arial, sans-serif;
+    border: 1px solid #750000;
 }
 
-canvas {
-    display:block;
+#settings {
+    font-size: 110%;
+    line-height: 150%;
+}
+
+#settings span {
+    margin-right: 10px;
+}
+
+.ib {
+    display: inline-block;
+}
+
+#stats {
+    font-size: 90%;
+    margin-top: 10px;
+}
+
+#reads {
+    color: #1456f7;
+}
+
+#writes {
+    color: #ff0000;
+}
+
+#canvas {
+    margin-top: 2px;
+}
+
+select, input, button {
+    border-radius: 3px;
+    border-width: 0;
+    padding: 2px 5px;
+    background-color: #f5f5f5;
+}
+
+button {
+    cursor: pointer;
+    outline: none;
 }
         </style>
     </head>
     <body>
-        <canvas id="mainCanvas"></canvas>
-        <script>
+        <div id="container">
+            <div id="settings">
+                <span class="ib">
+                    <label for="#algorithm">Algorithm</label>
+                    <select id="algorithm"></select>
+                </span>
+                <span class="ib">
+                    <label for="#order">Array Order</label>
+                    <select id="order"></select>
+                </span>
+                <span class="ib">
+                    <label for="#size">Array Size</label>
+                    <input id="size" type="number" value="150" min="1" max="10000">
+                </span>
+                <button id="run">Run</button>
+                <button id="pause">Pause</button>
+            </div>
+            <div id="stats">
+                <span class="ib"><span id="reads"><span id="readsCount">0</span> Reads</span> |</span>
+                <span class="ib"><span id="writes"><span id="writesCount">0</span> Writes</span> |</span>
+                <span class="ib"><span id="runtime">0</span> ms</span>
+            </div>
+        </div>
+        <canvas id="canvas"></canvas>
+        <script defer="true">
 (function() {
     "use strict";
 
-    var algorithmName, displayText, drawDelay, canvas, context, drawLoop, max,  doneIndex;
-    var reads = 0, writes = 0, currentArray = [], readwritesHistory = [], readwrites, algorithms = {
-        "Bogo": bogo,
-        "Bubble": bubble,
-        "Insertion": insertion,
-        "Selection": selection,
+    var drawLoop, max, doneIndex, reads = 0, writes = 0, currentArray = [], readwritesHistory = [],
+    algorithms = {
+        "Quick": quick,
+        "Merge": merge,
+        "Heap": heap,
         "Counting": counting,
         "Radix": radix,
-        "Merge": merge,
-        "Quick": quick,
-        "Heap": heap
-    };
+        "Insertion": insertion,
+        "Selection": selection,
+        "Bubble": bubble
+        //"Bogo": bogo
+    },
+    readwrites = null,
+    algorithmDropdown = document.getElementById("algorithm"),
+    orderDropdown = document.getElementById("order"),
+    sizeInput = document.getElementById("size"),
+    drawDelay = parseInt(getParameterByName("d")),
+    drawDelay =  drawDelay < 10 ? 10 : drawDelay,
+    canvas = document.getElementById("canvas"),
+    context = canvas.getContext("2d"),
+    containerDiv = document.getElementById("container"),
+    readsSpan = document.getElementById("readsCount"),
+    writesSpan = document.getElementById("writesCount"),
+    runtimeSpan = document.getElementById("runtime"),
+    runButton = document.getElementById("run"),
+    pauseButton = document.getElementById("pause"),
+    defaultAlgorithm = getParameterByName("a"),
+    defaultSize = parseInt(getParameterByName("n")),
+    defaultOrder = getParameterByName("o"),
+    orders = ["Random", "Sorted", "Reversed"];
 
-    init();
-
-    function init() {
-        var tempName = getParameterByName("algo");
-        algorithmName = tempName ? tempName.charAt(0).toUpperCase() + tempName.slice(1).toLowerCase() : "Heap";
-        displayText = algorithmName + " Sort - Click Anywhere";
-        var tempDelay = parseInt(getParameterByName("d"));
-        drawDelay =  tempDelay < 10 ? 10 : tempDelay;
-        canvas = document.getElementById("mainCanvas");
-        context = canvas.getContext("2d");
-        addRunListener();
-        resizeCanvas();
-        window.onresize = () => resizeCanvas();
+    if (defaultOrder) defaultOrder = defaultOrder.charAt(0).toUpperCase() + defaultOrder.slice(1).toLowerCase();
+    for (let i = 0; i < 3; i++) {
+        let option = document.createElement("option"), order = orders[i];
+        option.text = order;
+        if (order === defaultOrder) option.selected = true;
+        orderDropdown.add(option);
+    }
+    if (!isNaN(defaultSize) && defaultSize > 0) sizeInput.value = defaultSize;
+    if (defaultAlgorithm) defaultAlgorithm = defaultAlgorithm.charAt(0).toUpperCase() + defaultAlgorithm.slice(1).toLowerCase();
+    if (!algorithms.hasOwnProperty(defaultAlgorithm)) defaultAlgorithm = Object.keys(algorithms)[0];
+    for (let algorithm in algorithms) {
+        if(algorithms.hasOwnProperty(algorithm)) {
+            let option = document.createElement("option");
+            option.text = algorithm;
+            if (algorithm === defaultAlgorithm) option.selected = true;
+            algorithmDropdown.add(option);
+        }
     }
 
-    function addRunListener() {
-        canvas.onclick = () => run(algorithms[algorithmName]);
+    runSetup();
+    resizeCanvas();
+    window.onresize = () => resizeCanvas();
+
+
+    function runSetup() {
+        stopDrawLoop();
+        pauseButton.style.display = "none";
+        runButton.innerHTML = "Run";
+        runButton.onclick = () => run(algorithms[algorithmDropdown.value]);
     }
 
-    function addPauseListener() {
-        canvas.onclick = () => {stopDrawLoop(); addResumeListener();};
+
+    function resume() {
+        pauseButton.style.display = "initial";
+        pauseButton.innerHTML = "Pause";
+        pauseButton.onclick = () => pause();
+        startDrawLoop();
     }
 
-    function addResumeListener() {
-        canvas.onclick = () => {startDrawLoop(); addPauseListener();};
+    function pause() {
+        stopDrawLoop();
+        pauseButton.innerHTML = "Resume";
+        pauseButton.onclick = () => resume();
     }
 
     function startDrawLoop() {
@@ -74,16 +176,20 @@ canvas {
     }
 
     function run(algorithm) {
+        runButton.onclick = () => runSetup();
         readwritesHistory = [];
-        doneIndex = reads = writes = 0;
+        doneIndex = reads = writes = writesCount.innerHTML = readsCount.innerHTML = 0;
+        var l = parseInt(sizeInput.value) || 150, order = orderDropdown.value,
         //Generate an array of random numbers, range 100-9999 inclusive
-        var l = parseInt(getParameterByName("n")) || 150, array = Array.from({length: l}, () => Math.floor(100 + Math.random() * 9900));
-        //array.sort((a, b) => a - b);
+        array = Array.from({length: l}, () => Math.floor(100 + Math.random() * 9900));
+        if (order != "Random") array.sort(order == "Sorted" ? (a, b) => a - b : (a, b) => b - a);
         currentArray = (array.slice());
         max = Math.max(...array);
-        addPauseListener();
+        var startTime = performance.now();
         algorithm(array, 0, l-1);
-        startDrawLoop();
+        runtime.innerHTML = (performance.now() - startTime).toFixed(4);
+        runButton.innerHTML = "Stop";
+        resume();
     }
 
     function bubble(array, start, end) {
@@ -100,6 +206,7 @@ canvas {
         }
     }
 
+    /*
     function bogo(array, start, end) {
         while (!isSorted(array, start, end)) {
             for (let i = start; i <= end; i++) {
@@ -108,6 +215,7 @@ canvas {
             }
         }
     }
+    */
 
     function insertion(array, start, end) {
         for (let i = start; i <= end; i++) {
@@ -128,12 +236,12 @@ canvas {
     }
 
     function counting(array, start, end) {
-        var countArray = new Array(10000).fill(0);
+        var countArray = new Array(max+1).fill(0);
         for (let i = start; i <= end; i++) {
             countArray[read(array, i)]++;
         }
 
-        for (let i = 100; i < 10001; i++) {
+        for (let i = 100; i <= max; i++) {
             while (countArray[i] > 0) {
                 write(array, start++, i);
                 countArray[i]--;
@@ -270,26 +378,25 @@ canvas {
 
     function drawArray(resize) {
         var l = currentArray.length, barWidth = canvas.width / l;
-        context.fillStyle = "#000";
+        context.fillStyle = "#101010";
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         if (!resize) {
             if (readwritesHistory.length > 0) {
                 readwrites = readwritesHistory.shift();
-                //0: read, 1: write
                 for (let l = readwrites.length, i = 0; i < l; i++) {
                     let readwrite = readwrites[i];
+                    //0: read, 1: write
                     if (readwrite.type == 1) {
-                        writes++;
+                        writesCount.innerHTML = ++writes;
                         currentArray[readwrite.index] = readwrite.value;
-                    } else reads++;
+                    } else readsSpan.innerHTML = ++reads;
                 }
             } else if (doneIndex < l) {
                 readwrites = null;
                 doneIndex++;
             } else {
-                stopDrawLoop();
-                addRunListener();
+                runSetup();
             }
         }
 
@@ -300,18 +407,10 @@ canvas {
         if (readwrites) {
             for (let l = readwrites.length, i = 0; i < l; i++) {
                 let readwrite = readwrites[i],
-                    color = readwrite.type === 0 ? "#0000ff" : "#ff0000";
+                    color = readwrite.type === 0 ? "#1456f7" : "#ff0000";
                 drawBar(readwrite.index, currentArray[readwrite.index], barWidth, color, max);
             }
         }
-
-        context.font = "30px Arial";
-        context.fillStyle = "#fff";
-        context.fillText(displayText, 50, 50);
-        context.fillStyle = "#0000ff";
-        context.fillText(reads + " Reads", 50, 100);
-        context.fillStyle = "#ff0000";
-        context.fillText(writes + " Writes", 50, 140);
     }
 
     function drawBar(index, value, barWidth, color, max) {
@@ -322,7 +421,7 @@ canvas {
 
     function resizeCanvas() {
         canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.height = window.innerHeight - containerDiv.offsetHeight;
         drawArray(true);
     }
 
