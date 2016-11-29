@@ -113,6 +113,7 @@ button {
     canvas = document.getElementById("canvas"),
     context = canvas.getContext("2d"),
     containerDiv = document.getElementById("container"),
+    containerDivStyle = getComputedStyle(containerDiv),
     readsSpan = document.getElementById("readsCount"),
     writesSpan = document.getElementById("writesCount"),
     runtimeSpan = document.getElementById("runtime"),
@@ -456,7 +457,7 @@ button {
 
     function resizeCanvas() {
         canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight - containerDiv.offsetHeight;
+        canvas.height = window.innerHeight - containerDiv.offsetHeight - parseInt(containerDivStyle.marginTop) - parseInt(containerDivStyle.marginBottom);
         drawArray(true);
     }
 
