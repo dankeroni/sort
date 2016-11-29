@@ -16,6 +16,7 @@ body {
     color: white;
     font-family: "Open Sans", Arial, sans-serif;
     border: 1px solid #750000;
+    margin-bottom: 2px;
 }
 
 #settings {
@@ -42,10 +43,6 @@ body {
 
 #writes {
     color: #ff0000;
-}
-
-#canvas {
-    margin-top: 2px;
 }
 
 select, input, button {
@@ -153,6 +150,12 @@ button {
     window.onresize = () => resizeCanvas();
     delayInput.onblur = () => checkDelayInput();
     sizeInput.onblur = () => checkSizeInput();
+    delayInput.oninput = () => {
+        if (drawLoop) {
+            stopDrawLoop();
+            startDrawLoop(true);
+        }
+    };
 
 
     function runSetup() {
@@ -169,7 +172,7 @@ button {
         pauseButton.innerHTML = "Pause";
         pauseButton.onclick = () => pause();
         pauseButton.focus();
-        startDrawLoop();
+        startDrawLoop(false);
     }
 
     function pause() {
@@ -179,19 +182,21 @@ button {
         pauseButton.focus();
     }
 
-    function startDrawLoop() {
-        drawArray(false);
-        drawLoop = setInterval(() => drawArray(false), checkDelayInput());
+    function startDrawLoop(dynamicDelay) {
+        drawArray(true);
+        drawLoop = setInterval(() => drawArray(false), checkDelayInput(dynamicDelay));
     }
 
     function stopDrawLoop() {
         clearInterval(drawLoop);
+        drawLoop = false;
     }
 
-    function checkDelayInput() {
+    function checkDelayInput(dynamicDelay) {
         var delay = delayInput.value;
         if (delay < 10) {
-            delay = delayInput.value = 10;
+            delay = 10;
+            if (!dynamicDelay) delayInput.value = delay;
         }
         return delay;
     }
