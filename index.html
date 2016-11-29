@@ -77,6 +77,10 @@ button {
                     <input id="size" type="number" value="150" min="1" max="10000">
                 </span>
                 <span>
+                    <label for="#delay">Draw Delay</label>
+                    <input id="delay" type="number" value="10" min="10" max="10000">
+                </span>
+                <span>
                     <button id="run">Run</button>
                     <button id="pause">Pause</button>
                 </span>
@@ -108,7 +112,7 @@ button {
     algorithmDropdown = document.getElementById("algorithm"),
     orderDropdown = document.getElementById("order"),
     sizeInput = document.getElementById("size"),
-    drawDelay = parseInt(getParameterByName("d")),
+    delayInput = document.getElementById("delay"),
     canvas = document.getElementById("canvas"),
     context = canvas.getContext("2d"),
     containerDiv = document.getElementById("container"),
@@ -118,11 +122,11 @@ button {
     runButton = document.getElementById("run"),
     pauseButton = document.getElementById("pause"),
     defaultAlgorithm = getParameterByName("a"),
-    defaultSize = parseInt(getParameterByName("n")),
     defaultOrder = getParameterByName("o"),
+    defaultSize = parseInt(getParameterByName("n")),
+    defaultDelay = parseInt(getParameterByName("d")),
     orders = ["Random", "Sorted", "Reversed"];
 
-    drawDelay =  drawDelay < 10 ? 10 : drawDelay;
     if (defaultOrder) defaultOrder = defaultOrder.charAt(0).toUpperCase() + defaultOrder.slice(1).toLowerCase();
     for (let i = 0; i < 3; i++) {
         let option = document.createElement("option"), order = orders[i];
@@ -131,6 +135,7 @@ button {
         orderDropdown.add(option);
     }
     if (!isNaN(defaultSize) && defaultSize > 0) sizeInput.value = defaultSize;
+    if (!isNaN(defaultDelay) && defaultDelay > 9) delayInput.value = defaultDelay;
     if (defaultAlgorithm) defaultAlgorithm = defaultAlgorithm.charAt(0).toUpperCase() + defaultAlgorithm.slice(1).toLowerCase();
     if (!algorithms.hasOwnProperty(defaultAlgorithm)) defaultAlgorithm = Object.keys(algorithms)[0];
     for (let algorithm in algorithms) {
@@ -143,13 +148,17 @@ button {
     }
 
     runSetup();
+    runButton.focus();
     resizeCanvas();
     window.onresize = () => resizeCanvas();
+    delayInput.onblur = () => checkDelayInput();
+    sizeInput.onblur = () => checkSizeInput();
 
 
     function runSetup() {
         stopDrawLoop();
         pauseButton.style.display = "none";
+        if (pauseButton === document.activeElement) runButton.focus();
         runButton.innerHTML = "Run";
         runButton.onclick = () => run(algorithms[algorithmDropdown.value]);
     }
@@ -159,6 +168,7 @@ button {
         pauseButton.style.display = "initial";
         pauseButton.innerHTML = "Pause";
         pauseButton.onclick = () => pause();
+        pauseButton.focus();
         startDrawLoop();
     }
 
@@ -166,22 +176,40 @@ button {
         stopDrawLoop();
         pauseButton.innerHTML = "Resume";
         pauseButton.onclick = () => resume();
+        pauseButton.focus();
     }
 
     function startDrawLoop() {
         drawArray(false);
-        drawLoop = setInterval(() => drawArray(false), drawDelay);
+        drawLoop = setInterval(() => drawArray(false), checkDelayInput());
     }
 
     function stopDrawLoop() {
         clearInterval(drawLoop);
     }
 
+    function checkDelayInput() {
+        var delay = delayInput.value;
+        if (delay < 10) {
+            delay = delayInput.value = 10;
+        }
+        return delay;
+    }
+
+    function checkSizeInput() {
+        var size = sizeInput.value;
+        if (size < 5) {
+            size = sizeInput.value = 5;
+        }
+        return size;
+    }
+
     function run(algorithm) {
         runButton.onclick = () => runSetup();
+        runButton.blur();
         readwritesHistory = [];
         doneIndex = reads = writes = writesSpan.innerHTML = readsSpan.innerHTML = 0;
-        var l = parseInt(sizeInput.value) || 150, order = orderDropdown.value,
+        var l = checkSizeInput(), order = orderDropdown.value,
         //Generate an array of random numbers, range 100-9999 inclusive
         array = Array.from({length: l}, () => Math.floor(100 + Math.random() * 9900));
         if (order != "Random") array.sort(order == "Sorted" ? (a, b) => a - b : (a, b) => b - a);
